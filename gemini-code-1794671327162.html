@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>University of Rwanda | Sports Services & Facilities Monitoring Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --ur-teal: #1b5e7a;
+      --ur-teal-dark: #13455a;
+      --ur-teal-light: #e6f2f6;
+      --ur-gold: #d99b26;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f7f9;
+      color: #1e293b;
+    }
+    .ur-header {
+      background: linear-gradient(135deg, var(--ur-teal-dark) 0%, var(--ur-teal) 100%);
+    }
+    .tab-btn.active {
+      border-bottom: 3px solid var(--ur-gold);
+      color: #ffffff;
+      font-weight: 600;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
+    }
+    .badge-yes {
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .badge-no {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .badge-warn {
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    /* Custom scrollbar for matrices */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Institutional Navigation Header -->
+  <header class="ur-header text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between py-3 gap-4">
+        <div class="flex items-center gap-3.5">
+          <!-- Crisp Vector Emblem matching UR Seal -->
+          <div class="w-12 h-12 rounded-full bg-white p-1 flex items-center justify-center shadow-sm shrink-0">
+            <svg viewBox="0 0 120 120" class="w-full h-full">
+              <circle cx="60" cy="60" r="56" fill="#1b5e7a" stroke="#1b5e7a" stroke-width="2"/>
+              <circle cx="60" cy="60" r="42" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="3,2"/>
+              <text x="60" y="15" text-anchor="middle" fill="#ffffff" font-size="8.5" font-weight="bold" letter-spacing="1.2">UNIVERSITY OF RWANDA</text>
+              <path d="M32 42 L32 72 Q32 88 48 88 Q62 88 62 72 L62 36 L82 36 Q94 36 94 49 Q94 61 82 61 L64 61 M76 61 L94 88" fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg sm:text-xl font-bold tracking-tight">UNIVERSITY OF RWANDA</h1>
+              <span class="hidden sm:inline-block text-xs uppercase tracking-wider px-2 py-0.5 rounded bg-white/15 text-amber-200 font-semibold">Directorate of Student Welfare</span>
+            </div>
+            <p class="text-xs sm:text-sm text-sky-100">Dynamic Sports Services, Inclusion &amp; Facilities Monitoring Portal</p>
+          </div>
+        </div>
+
+        <!-- Global Campus Filter & Export Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="globalCampusFilter" onchange="handleCampusFilterChange()" class="bg-white/15 border border-white/30 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <option value="ALL" class="text-slate-900">All UR Campuses (8 Reporting)</option>
+          </select>
+          <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition shadow-sm flex items-center gap-1.5">
+            <span>⬇ Export CSV</span>
+          </button>
+          <button onclick="resetDefaultData()" title="Reset to original uploaded CSV dataset" class="bg-white/10 hover:bg-white/20 text-white text-xs px-2.5 py-1.5 rounded-lg transition">
+            ↺ Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 overflow-x-auto pt-1">
+        <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active px-4 py-2.5 text-sm text-sky-100 hover:text-white whitespace-nowrap transition">
+          📊 Executive Dashboard
+        </button>
+        <button onclick="switchTab('facilities')" id="tab-facilities" class="tab-btn px-4 py-2.5 text-sm text-sky-100 hover:text-white whitespace-nowrap transition">
+          🏟️ Facilities &amp; Equipment
+        </button>
+        <button onclick="switchTab('inclusion')" id="tab-inclusion" class="tab-btn px-4 py-2.5 text-sm text-sky-100 hover:text-white whitespace-nowrap transition">
+          ♿ Inclusion &amp; Gender Matrix
+        </button>
+        <button onclick="switchTab('governance')" id="tab-governance" class="tab-btn px-4 py-2.5 text-sm text-sky-100 hover:text-white whitespace-nowrap transition">
+          💼 Budget, Coaching &amp; Medical
+        </button>
+        <button onclick="switchTab('report')" id="tab-report" class="tab-btn px-4 py-2.5 text-sm text-sky-100 hover:text-white whitespace-nowrap transition">
+          ➕ Submit / Update Campus Report
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Workspace -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Top KPI Summary Strip (Always visible & dynamically filtered) -->
+    <section id="kpiStrip" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <!-- Populated via JS -->
+    </section>
+
+    <!-- TAB 1: EXECUTIVE DASHBOARD -->
+    <section id="view-overview" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Active Sports Disciplines by Campus</h2>
+              <p class="text-xs text-slate-500">Count of distinct sports practiced across student/staff categories</p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-50 text-sky-800">18 Core Disciplines</span>
+          </div>
+          <div class="h-72">
+            <canvas id="disciplinesChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Operational Readiness Index across UR</h2>
+              <p class="text-xs text-slate-500">Percentage of reporting campuses meeting key service standards</p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800">Service Audit</span>
+          </div>
+          <div class="h-72">
+            <canvas id="readinessChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campus Summary Status Matrix Table -->
+      <div class="card overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Campus-by-Campus Service &amp; Infrastructure Snapshot</h2>
+            <p class="text-xs text-slate-500">Click any campus row to inspect full facility inventory, demographic matrix, and officer recommendations</p>
+          </div>
+          <input type="text" id="tableSearch" onkeyup="renderOverviewTable()" placeholder="Search campus, sport, or status..." class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+              <tr>
+                <th class="px-4 py-3 text-left">Campus</th>
+                <th class="px-4 py-3 text-center">Disciplines</th>
+                <th class="px-4 py-3 text-center">Coaches</th>
+                <th class="px-4 py-3 text-center">Medical</th>
+                <th class="px-4 py-3 text-center">Insurance</th>
+                <th class="px-4 py-3 text-center">Equipment</th>
+                <th class="px-4 py-3 text-center">Budget Enough</th>
+                <th class="px-4 py-3 text-center">PWD Sports</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="overviewTableBody" class="divide-y divide-slate-200 bg-white">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: FACILITIES & EQUIPMENT -->
+    <section id="view-facilities" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card p-5 lg:col-span-2">
+          <h2 class="text-base font-bold text-slate-800 mb-1">Playground &amp; Infrastructure Condition Overview</h2>
+          <p class="text-xs text-slate-500 mb-4">Comparison of available playgrounds, standard-compliant courts, renovation backlog, and new construction needs</p>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Campus</th>
+                  <th class="px-3 py-2.5 text-left">Available Playgrounds</th>
+                  <th class="px-3 py-2.5 text-left text-emerald-700">Meets Standards</th>
+                  <th class="px-3 py-2.5 text-left text-amber-700">Needs Renovation</th>
+                  <th class="px-3 py-2.5 text-left text-rose-700">Needs Building</th>
+                </tr>
+              </thead>
+              <tbody id="facilitiesTableBody" class="divide-y divide-slate-200">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card p-5 space-y-4">
+          <h2 class="text-base font-bold text-slate-800">Equipment &amp; Storage Bottlenecks</h2>
+          <div class="h-56">
+            <canvas id="equipmentChart"></canvas>
+          </div>
+          <div class="p-3.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1.5">
+            <p class="font-bold">⚠️ Key Procurement &amp; Storage Findings:</p>
+            <ul class="list-disc pl-4 space-y-1">
+              <li><strong>62.5% (5/8)</strong> campuses report insufficient sports &amp; cultural equipment due to limited budgets and tender delays.</li>
+              <li><strong>37.5% (3/8)</strong> campuses (Nyarugenge, Gikondo, Busogo) lack a dedicated storage room and store gear inside officers' offices.</li>
+              <li><strong>Remera &amp; Busogo</strong> highlight urgent needs for a covered gymnasium and rubberized court surfacing.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Equipment & Storage Cards -->
+      <div id="equipmentCardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: INCLUSION & GENDER MATRIX -->
+    <section id="view-inclusion" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card p-5">
+          <h2 class="text-base font-bold text-slate-800 mb-1">Reported Athlete Gender Distribution by Campus</h2>
+          <p class="text-xs text-slate-500 mb-3">Estimated male vs. female participation share reported by campus sports officers</p>
+          <div class="h-72">
+            <canvas id="genderChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <h2 class="text-base font-bold text-slate-800 mb-1">Parasports &amp; PWD Inclusion Readiness</h2>
+          <p class="text-xs text-slate-500 mb-3">Campuses offering adaptive sports (Sitting Volleyball, Goalball, Sitball, Wheelchair Basketball) &amp; NPC Rwanda participation</p>
+          <div id="pwdSummaryList" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Discipline x Demographic Participation Heatmap -->
+      <div class="card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Discipline &times; Demographic Group Coverage Heatmap</h2>
+            <p class="text-xs text-slate-500">Shows how many campuses actively run each sport across the 8 demographic categories</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2 py-1 rounded bg-slate-100 text-slate-600">0 Campuses</span>
+            <span class="px-2 py-1 rounded bg-sky-100 text-sky-800">1–2 Campuses</span>
+            <span class="px-2 py-1 rounded bg-sky-500 text-white">3–5 Campuses</span>
+            <span class="px-2 py-1 rounded bg-teal-800 text-white">6–8 Campuses</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs border-collapse" id="heatmapTable">
+            <!-- Populated via JS -->
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BUDGET, COACHING & MEDICAL GOVERNANCE -->
+    <section id="view-governance" class="hidden space-y-6">
+      <div id="governanceGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 5: SUBMIT / UPDATE CAMPUS REPORT -->
+    <section id="view-report" class="hidden space-y-6">
+      <div class="card p-6 max-w-4xl mx-auto">
+        <div class="border-b border-slate-200 pb-4 mb-5">
+          <h2 class="text-lg font-bold text-slate-800">Campus Sports &amp; Facilities Field Reporting Form</h2>
+          <p class="text-xs text-slate-500">Submit a new campus status update or facility audit. Updates immediately recalculate all portal charts and KPIs.</p>
+        </div>
+
+        <form id="campusReportForm" onsubmit="handleReportSubmit(event)" class="space-y-5 text-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Campus Name *</label>
+              <select id="formCampus" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-600">
+                <option value="UR Nyarugenge Campus">UR Nyarugenge Campus</option>
+                <option value="UR Remera Campus">UR Remera Campus</option>
+                <option value="UR Rukara Campus">UR Rukara Campus</option>
+                <option value="UR Gikondo Campus">UR Gikondo Campus</option>
+                <option value="UR Rwamagana Campus">UR Rwamagana Campus</option>
+                <option value="UR Nyagatare Campus">UR Nyagatare Campus</option>
+                <option value="UR Busogo Campus (Officer: Nzabakulikiza Théodore)">UR Busogo Campus</option>
+                <option value="UR Huye Campus">UR Huye Campus</option>
+                <option value="UR Rusizi Campus">UR Rusizi Campus (New Entry)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Sports Categories Practiced</label>
+              <input type="text" id="formCategories" value="Sports for all, Sports for competition" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Coaches Available?</label>
+              <select id="formCoaches" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Medical Staff?</label>
+              <select id="formMedical" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Competition Insurance?</label>
+              <select id="formInsurance" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Equipment Status</label>
+              <select id="formEquipment" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="Enough">Enough</option>
+                <option value="Not enough">Not enough</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Available Playgrounds Summary</label>
+              <input type="text" id="formPlaygrounds" placeholder="e.g., 2 Football, 2 Basketball, 2 Volleyball" required class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Playgrounds Needing Renovation / Building</label>
+              <input type="text" id="formRenovation" placeholder="e.g., 1 Basketball needs rubber surface; 1 Handball to build" required class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Allocated Budget Enough?</label>
+              <select id="formBudgetEnough" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">PWD Sports Activities?</label>
+              <select id="formPwd" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Female Athletes (%)</label>
+              <input type="number" id="formFemalePct" min="0" max="100" value="35" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Male Athletes (%)</label>
+              <input type="number" id="formMalePct" min="0" max="100" value="65" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Key Challenges &amp; Actionable Way Forward</label>
+            <textarea id="formRecommendations" rows="3" placeholder="Enter infrastructure, budget, coaching, or inclusion recommendations..." class="w-full border border-slate-300 rounded-lg px-3 py-2"></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="submit" class="bg-[#1b5e7a] hover:bg-[#13455a] text-white font-semibold px-5 py-2.5 rounded-lg shadow transition">
+              Save &amp; Publish Campus Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Campus Deep-Dive Modal -->
+  <div id="campusModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="ur-header text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 id="modalTitle" class="text-lg font-bold">Campus Detail</h3>
+          <p id="modalSubtitle" class="text-xs text-sky-100">Comprehensive Sports &amp; Infrastructure Profile</p>
+        </div>
+        <button onclick="closeCampusModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div id="modalBody" class="p-6 overflow-y-auto space-y-5 text-sm">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap justify-between items-center gap-2">
+      <span>University of Rwanda &bull; Sports &amp; Culture Services Monitoring Portal</span>
+      <span>Data Source: UR Campuses Sports &amp; Culture Baseline Survey (8 Campuses)</span>
+    </div>
+  </footer>
+
+  <script>
+    // 1. EMBEDDED DATASET EXTRACTED DIRECTLY FROM UR SURVEY CSV
+    const DEMOGRAPHIC_GROUPS = [
+      "For male students",
+      "For female students",
+      "For male students with disability",
+      "For female students with disability",
+      "For male staff",
+      "For female staff",
+      "For male staff with disability",
+      "For female staff with disability"
+    ];
+
+    const ALL_DISCIPLINES = [
+      "Athletics", "Badminton", "Basketball", "Chess", "Cricket", "Football",
+      "Goal ball", "Handball", "Judo", "Karate", "Kung fu",
+      "Ping pong (Table tennis)", "Rugby", "Sit ball", "Setting Volleyball",
+      "Swimming", "Tennis", "Volleyball"
+    ];
+
+    function buildDiscMatrix(activeMap) {
+      const matrix = {};
+      ALL_DISCIPLINES.forEach(d => {
+        matrix[d] = {};
+        const activeIndices = activeMap[d] || [];
+        DEMOGRAPHIC_GROUPS.forEach((grp, idx) => {
+          matrix[d][grp] = activeIndices.includes(idx) ? "Yes" : "No";
+        });
+      });
+      return matrix;
+    }
+
+    const INITIAL_UR_DATA = [
+      {
+        id: 1,
+        timestamp: "5/8/2026 18:24",
+        campus: "UR Nyarugenge Campus",
+        sportsCategories: "Sports for all, Sports for competition",
+        activeCount: 8,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1],
+          "Basketball": [0, 1, 4, 5],
+          "Football": [0, 1, 4],
+          "Handball": [0, 1],
+          "Karate": [0, 1, 4],
+          "Ping pong (Table tennis)": [0, 1, 4],
+          "Swimming": [0, 1],
+          "Volleyball": [0, 1, 4]
+        }),
+        otherSports: "None",
+        equalPromotion: "No",
+        equalPromotionSuggestion: "More sensitization in female sports",
+        intraCampusGames: "Inter promotions, Inter schools, Intra and inter associations",
+        extraCampusGames: "UR inter campuses, National league, Friendly games",
+        internationalComp: "No",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "Yes", challenges: "Volunteer-only structure", wayForward: "Give contracts to coaches and train others" },
+        medical: { hasMedical: "Yes", challenges: "Some medicaments are not available", wayForward: "Supply more medicaments" },
+        insurance: { hasInsurance: "Yes", suggestion: "Maintain coverage" },
+        studentRole: "Collaborative",
+        facilities: {
+          availableDesc: "1 Mixed playground (Volleyball and Basketball)",
+          standardDesc: "None",
+          renovationDesc: "1 Mixed playground",
+          buildingDesc: "3 playgrounds (Football, Basketball, Handball)"
+        },
+        equipment: {
+          sportsEquip: "Not enough",
+          culturalEquip: "Not enough",
+          lackReasons: "Limited budget",
+          wayForward: "Purchase enough equipment",
+          hasStore: "No",
+          storeLocation: "Kept in the Office",
+          storeSuggestion: "Establish dedicated Store and Store Manager",
+          renewalPeriod: "Per Academic year"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "No",
+          isRespected: "No",
+          implications: "Lack of implementation of planned activities",
+          facilitationSuggestion: "Give mission funds directly to Chief of Mission"
+        },
+        pwd: {
+          hasActivities: "No",
+          sportsList: "None",
+          hasAdaptedFacilities: "No",
+          adaptedEnough: "No",
+          constructionPlan: "Yes",
+          npcParticipation: "No",
+          disabilityTypes: "Not yet active",
+          pwdPercentage: "0%"
+        },
+        gender: { femaleClubsCount: "0", femaleClubsList: "None", genderRespected: "No", femalePct: 35, malePct: 65, suggestions: "More mobilization for female students" }
+      },
+      {
+        id: 2,
+        timestamp: "5/19/2026 17:31",
+        campus: "UR Remera Campus",
+        sportsCategories: "Sports for all, Sports for competition",
+        activeCount: 16,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1, 4, 5],
+          "Badminton": [0, 1, 4, 5],
+          "Basketball": [0, 1, 2, 3, 4, 5],
+          "Chess": [0, 1, 4, 5],
+          "Cricket": [0, 1, 4, 5],
+          "Football": [0, 1, 4, 5],
+          "Handball": [0, 1, 4, 5],
+          "Judo": [0, 1],
+          "Karate": [0, 1],
+          "Kung fu": [0, 1],
+          "Ping pong (Table tennis)": [0, 1, 4, 5],
+          "Rugby": [0, 1],
+          "Sit ball": [0, 1],
+          "Setting Volleyball": [0, 1],
+          "Swimming": [0, 1, 2, 3],
+          "Volleyball": [0, 1, 4, 5]
+        }),
+        otherSports: "Netball",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "Improve infrastructure suitable for persons with disabilities, especially walkways",
+        intraCampusGames: "Inter promotions, Inter schools, Intra and inter associations",
+        extraCampusGames: "UR inter campuses, National league, Varsity League",
+        internationalComp: "No",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "Yes", challenges: "No policy to give extra time allowances because they work after hours", wayForward: "Establish policy granting volunteer staff/student coaches overtime allowances" },
+        medical: { hasMedical: "Yes", challenges: "Covered via campus health services", wayForward: "Sustain medical support" },
+        insurance: { hasInsurance: "Yes", suggestion: "Maintain coverage" },
+        studentRole: "Organizing student participation and carrying out advocacy",
+        facilities: {
+          availableDesc: "4 playgrounds (Football, Basketball, Volleyball, Handball)",
+          standardDesc: "3 (Basketball, Volleyball, Handball)",
+          renovationDesc: "Football pitch needs size expansion; Basketball rubber surfacing omitted in tender",
+          buildingDesc: "1 Gymnasium over the multipurpose VB/BB playground"
+        },
+        equipment: {
+          sportsEquip: "Not enough",
+          culturalEquip: "Not enough",
+          lackReasons: "Limited budget",
+          wayForward: "Increase budget allocated to sports materials",
+          hasStore: "Yes",
+          storeLocation: "Managed by Sport and Culture Officer",
+          storeSuggestion: "Maintain store inventory",
+          renewalPeriod: "Per sports Season"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "No",
+          isRespected: "No",
+          implications: "Affects general performance of sports activities",
+          facilitationSuggestion: "Increase student mission fees (current policy dates back to 2015)"
+        },
+        pwd: {
+          hasActivities: "Yes",
+          sportsList: "Sitting Volleyball, Sitball, Wheelchair Basketball, Para-Badminton",
+          hasAdaptedFacilities: "Yes",
+          adaptedEnough: "Yes",
+          constructionPlan: "No",
+          npcParticipation: "Yes (Sitting Volleyball & Sitball)",
+          disabilityTypes: "Physical disability",
+          pwdPercentage: "5%"
+        },
+        gender: { femaleClubsCount: "6", femaleClubsList: "Football, Volleyball, Basketball, Handball, Swimming, Netball, Rugby, Karate", genderRespected: "Yes", femalePct: 30, malePct: 70, suggestions: "Continue with targeted female sports advocacy" }
+      },
+      {
+        id: 3,
+        timestamp: "9/23/2026 16:39",
+        campus: "UR Rukara Campus",
+        sportsCategories: "Sports for all, Sports for competition",
+        activeCount: 8,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1, 2, 3],
+          "Basketball": [0, 1],
+          "Football": [0, 1],
+          "Goal ball": [0, 1, 2, 3],
+          "Handball": [0, 1],
+          "Rugby": [0, 1],
+          "Setting Volleyball": [0],
+          "Volleyball": [0, 1]
+        }),
+        otherSports: "None",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "All are equally promoted",
+        intraCampusGames: "Inter promotions, Inter schools (Football, VB, BB, HB, Sitting VB)",
+        extraCampusGames: "UR inter campuses, National league",
+        internationalComp: "No",
+        coaches: { hasCoaches: "No", status: "None", specialized: "No", challenges: "No internal coaches; reliant on external recruitment", wayForward: "Recruit qualified external coaches" },
+        medical: { hasMedical: "Yes", challenges: "No major challenge", wayForward: "Provide specialized sports medicine trainings to medical staff" },
+        insurance: { hasInsurance: "Yes", suggestion: "Maintain coverage" },
+        studentRole: "Sustain student communication regarding sports",
+        facilities: {
+          availableDesc: "Standard campus fields (quantities unspecified)",
+          standardDesc: "Unspecified",
+          renovationDesc: "Unspecified",
+          buildingDesc: "Need for building modern sports infrastructure"
+        },
+        equipment: {
+          sportsEquip: "Enough",
+          culturalEquip: "Enough",
+          lackReasons: "N/A",
+          wayForward: "Maintain timely renewal",
+          hasStore: "Yes",
+          storeLocation: "Managed by Sports and Culture Officer",
+          storeSuggestion: "Maintain clean equipment storage facility",
+          renewalPeriod: "Per Academic year"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "Yes",
+          isRespected: "Yes",
+          implications: "Budget plan respected",
+          facilitationSuggestion: "Current process is convenient"
+        },
+        pwd: {
+          hasActivities: "Yes",
+          sportsList: "Sitting Volleyball, Goalball (plus Rwandan traditional dance)",
+          hasAdaptedFacilities: "Yes",
+          adaptedEnough: "Yes",
+          constructionPlan: "Yes",
+          npcParticipation: "Yes",
+          disabilityTypes: "Physical & Visual disabilities",
+          pwdPercentage: "20%"
+        },
+        gender: { femaleClubsCount: "4", femaleClubsList: "Football, Basketball, Handball, Volleyball", genderRespected: "Yes", femalePct: 20, malePct: 80, suggestions: "Sensitization campaigns to boost female participation" }
+      },
+      {
+        id: 4,
+        timestamp: "9/23/2026 17:02",
+        campus: "UR Gikondo Campus",
+        sportsCategories: "Sports for competition, Elite sports",
+        activeCount: 9,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1],
+          "Basketball": [0, 1, 4, 5],
+          "Football": [0, 4],
+          "Handball": [0],
+          "Karate": [0],
+          "Kung fu": [0],
+          "Swimming": [0, 1],
+          "Tennis": [0],
+          "Volleyball": [0, 1]
+        }),
+        otherSports: "Taekwondo",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "Increase mobilization",
+        intraCampusGames: "Inter promotions, Inter schools (Basketball & Football)",
+        extraCampusGames: "National league (Basketball Men & Football Men)",
+        internationalComp: "No (Not invited)",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "Yes", challenges: "Lack of formal qualifications/contracts", wayForward: "Provide formal contracts to coaches" },
+        medical: { hasMedical: "Yes", challenges: "Basic coverage available", wayForward: "Continue medical support" },
+        insurance: { hasInsurance: "Yes", suggestion: "Maintain coverage" },
+        studentRole: "Connecting students and staff",
+        facilities: {
+          availableDesc: "5 playgrounds (Football, Basketball, Volleyball, Handball, Tennis)",
+          standardDesc: "5 playgrounds meet basic standards",
+          renovationDesc: "3 playgrounds need renovation",
+          buildingDesc: "3 new playgrounds needed"
+        },
+        equipment: {
+          sportsEquip: "Not enough",
+          culturalEquip: "Not enough",
+          lackReasons: "Limited budget",
+          wayForward: "Increase budget for equipment",
+          hasStore: "No",
+          storeLocation: "Kept in office / makeshift space",
+          storeSuggestion: "Allocate dedicated equipment store",
+          renewalPeriod: "Per sports Season"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "No",
+          isRespected: "Yes",
+          implications: "Shortage of sports equipment",
+          facilitationSuggestion: "Convenient"
+        },
+        pwd: {
+          hasActivities: "No",
+          sportsList: "None",
+          hasAdaptedFacilities: "No",
+          adaptedEnough: "No",
+          constructionPlan: "No (Renovation planned)",
+          npcParticipation: "No",
+          disabilityTypes: "None reported",
+          pwdPercentage: "0%"
+        },
+        gender: { femaleClubsCount: "1", femaleClubsList: "Volleyball", genderRespected: "No", femalePct: 30, malePct: 70, suggestions: "Increase female sports mobilization" }
+      },
+      {
+        id: 5,
+        timestamp: "9/23/2026 17:13",
+        campus: "UR Rwamagana Campus",
+        sportsCategories: "Sports for all, Sports for competition",
+        activeCount: 5,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1, 4],
+          "Basketball": [0, 1, 4, 5],
+          "Football": [0, 1, 4],
+          "Handball": [0, 1],
+          "Volleyball": [0, 1, 4]
+        }),
+        otherSports: "None",
+        equalPromotion: "No",
+        equalPromotionSuggestion: "Focus more on female athletes and persons with disabilities",
+        intraCampusGames: "Inter promotions, Inter colleges (Football, Volleyball, Basketball)",
+        extraCampusGames: "UR inter campuses",
+        internationalComp: "No",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "No", challenges: "Lack of qualified coaches", wayForward: "Hire qualified coaches" },
+        medical: { hasMedical: "No", challenges: "No nurses stationed at campus competitions", wayForward: "Hire a dedicated campus nurse" },
+        insurance: { hasInsurance: "No", suggestion: "Pay competition insurance for players" },
+        studentRole: "Participate in all organization processes",
+        facilities: {
+          availableDesc: "3 playgrounds (2 Volleyball, 1 Basketball)",
+          standardDesc: "3 (2 Volleyball, 1 Basketball)",
+          renovationDesc: "3 (2 Volleyball, 1 Basketball need renovation)",
+          buildingDesc: "2 new fields (1 Football, 1 Handball)"
+        },
+        equipment: {
+          sportsEquip: "Enough",
+          culturalEquip: "Enough",
+          lackReasons: "N/A",
+          wayForward: "Continue regular equipment purchases",
+          hasStore: "Yes",
+          storeLocation: "Managed by Sports and Culture Officer",
+          storeSuggestion: "Renovate the storage room",
+          renewalPeriod: "Irregular"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "No",
+          isRespected: "No",
+          implications: "Teams travel without full facilitation or miss competitions",
+          facilitationSuggestion: "Distribute mission fees via Head of Delegation instead of individual student accounts"
+        },
+        pwd: {
+          hasActivities: "No",
+          sportsList: "None",
+          hasAdaptedFacilities: "No",
+          adaptedEnough: "No",
+          constructionPlan: "No",
+          npcParticipation: "No",
+          disabilityTypes: "None reported",
+          pwdPercentage: "0%"
+        },
+        gender: { femaleClubsCount: "4", femaleClubsList: "Football, Volleyball, Basketball, Handball", genderRespected: "No", femalePct: 30, malePct: 70, suggestions: "Encourage female students to participate in sports" }
+      },
+      {
+        id: 6,
+        timestamp: "9/23/2026 17:20",
+        campus: "UR Nyagatare Campus",
+        sportsCategories: "Sports for all, Sports for competition",
+        activeCount: 14,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1, 2, 3, 4],
+          "Basketball": [0, 1],
+          "Cricket": [0, 1],
+          "Football": [0, 1, 4],
+          "Goal ball": [0, 1, 2, 3],
+          "Handball": [0, 1],
+          "Judo": [0],
+          "Karate": [0, 1],
+          "Kung fu": [0],
+          "Rugby": [0, 1],
+          "Sit ball": [0],
+          "Setting Volleyball": [0, 1, 2, 3],
+          "Swimming": [0, 1],
+          "Volleyball": [0, 1]
+        }),
+        otherSports: "None",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "Increase sports disciplines in Inter-Campus competitions",
+        intraCampusGames: "Inter promotions, Inter schools, Inter colleges, Associations",
+        extraCampusGames: "UR inter campuses, National league",
+        internationalComp: "No",
+        coaches: { hasCoaches: "No", status: "None", specialized: "No", challenges: "Coaches are not on the official UR organizational structure", wayForward: "Recruit coaches under formal contracts" },
+        medical: { hasMedical: "Yes", challenges: "Lack of refresher trainings", wayForward: "Avail annual refresher courses in sports medicine" },
+        insurance: { hasInsurance: "No", suggestion: "Avail insurance coverage for team players" },
+        studentRole: "Mobilization for new sports and culture members",
+        facilities: {
+          availableDesc: "5 playgrounds (1 Football, 2 Basketball, 2 Volleyball)",
+          standardDesc: "2 (1 Volleyball, 1 Basketball)",
+          renovationDesc: "1 Basketball court",
+          buildingDesc: "4 facilities (1 Goalball, 1 Sitball, 1 Sitting Volleyball, 1 Handball)"
+        },
+        equipment: {
+          sportsEquip: "Not enough",
+          culturalEquip: "Not enough",
+          lackReasons: "Limited budget",
+          wayForward: "Increase budget allocated to sports and cultural materials",
+          hasStore: "Yes",
+          storeLocation: "Managed by Sports & Culture Officer & Culture Troupe President",
+          storeSuggestion: "Recruit permanent store/logistics staff",
+          renewalPeriod: "As needed"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "No",
+          isRespected: "No",
+          implications: "Sports & cultural activities are sometimes deprioritized",
+          facilitationSuggestion: "Convenient"
+        },
+        pwd: {
+          hasActivities: "Yes",
+          sportsList: "Goalball, Sitting Volleyball, Sitball, Para-Athletics (plus dance/drama/poetry)",
+          hasAdaptedFacilities: "No (Uses main recreation hall)",
+          adaptedEnough: "No",
+          constructionPlan: "Yes",
+          npcParticipation: "Yes (Goalball, Sitting VB, Sitball, Athletics)",
+          disabilityTypes: "Physical, Visual, and Deaf (~52 students)",
+          pwdPercentage: "15%"
+        },
+        gender: { femaleClubsCount: "6", femaleClubsList: "Football, Basketball, Volleyball, Handball, Sitball, Athletics", genderRespected: "Yes", femalePct: 30, malePct: 70, suggestions: "Increase awareness and mobilization to overcome participation barriers" }
+      },
+      {
+        id: 7,
+        timestamp: "9/23/2026 17:31",
+        campus: "UR Busogo Campus (Officer: Nzabakulikiza Théodore)",
+        sportsCategories: "Sports for competition",
+        activeCount: 8,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1],
+          "Basketball": [0, 1, 4, 5],
+          "Football": [0, 1, 4],
+          "Handball": [0, 1],
+          "Karate": [0, 1, 4],
+          "Ping pong (Table tennis)": [0, 1],
+          "Sit ball": [0],
+          "Volleyball": [0, 1]
+        }),
+        otherSports: "None",
+        equalPromotion: "No",
+        equalPromotionSuggestion: "We need dedicated sports infrastructures for people with disabilities",
+        intraCampusGames: "Inter promotions, Inter schools, Intra and inter associations",
+        extraCampusGames: "UR inter campuses, National league",
+        internationalComp: "No",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "No", challenges: "No institutional policy regarding recruitment of coaches", wayForward: "Conduct coaching training and workshops" },
+        medical: { hasMedical: "Yes", challenges: "Medical staff not sufficient during events", wayForward: "Recruit sufficient medical staff" },
+        insurance: { hasInsurance: "No", suggestion: "Provide comprehensive insurance for players and officials" },
+        studentRole: "Student association assists Sport Officer in organizing activities",
+        facilities: {
+          availableDesc: "7 playgrounds (1 Football, 3 Volleyball, 3 Basketball)",
+          standardDesc: "7 (All existing playgrounds meet basic standards)",
+          renovationDesc: "5 playgrounds need renovation",
+          buildingDesc: "5 new facilities (1 Handball, 1 Tennis, 1 Sitball, 1 Gymnasium, 1 Track field)"
+        },
+        equipment: {
+          sportsEquip: "Not enough",
+          culturalEquip: "Not enough",
+          lackReasons: "Limited budget, delay in requesting, slow tender process, incomplete deliveries",
+          wayForward: "Increase budget and streamline the procurement tender process",
+          hasStore: "No",
+          storeLocation: "Kept in Sport Officer's office",
+          storeSuggestion: "Avail a dedicated store for sports equipment",
+          renewalPeriod: "Per Academic / Fiscal year"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "No",
+          officersInvolved: "No",
+          isEnough: "No",
+          isRespected: "No",
+          implications: "Sports practice and training sessions are insufficient",
+          facilitationSuggestion: "Simplify mission facilitation approval"
+        },
+        pwd: {
+          hasActivities: "Yes",
+          sportsList: "Sitball",
+          hasAdaptedFacilities: "No",
+          adaptedEnough: "No",
+          constructionPlan: "No",
+          npcParticipation: "No",
+          disabilityTypes: "Not specified",
+          pwdPercentage: "N/A"
+        },
+        gender: { femaleClubsCount: "4", femaleClubsList: "Volleyball, Basketball, Football, Handball, Karate", genderRespected: "Yes", femalePct: 30, malePct: 70, suggestions: "Increase mobilization for female students across all sports" }
+      },
+      {
+        id: 8,
+        timestamp: "9/23/2026 17:35",
+        campus: "UR Huye Campus",
+        sportsCategories: "Sports for all, Sports for competition, Elite sports",
+        activeCount: 14,
+        disciplines: buildDiscMatrix({
+          "Athletics": [0, 1, 2, 3],
+          "Badminton": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Basketball": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Football": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Goal ball": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Handball": [0, 1, 2, 3],
+          "Karate": [0, 1, 2, 3],
+          "Kung fu": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Rugby": [0, 1],
+          "Sit ball": [0, 1, 2, 3],
+          "Setting Volleyball": [0, 1, 2, 3],
+          "Swimming": [0, 1, 2, 3, 4, 5],
+          "Tennis": [0, 1, 2, 3, 4, 5, 6, 7],
+          "Volleyball": [0, 1, 2, 3, 4, 5, 6, 7]
+        }),
+        otherSports: "None",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "Benchmark inclusion model across campuses",
+        intraCampusGames: "Inter schools, Inter colleges, Inter units (staff)",
+        extraCampusGames: "UR inter campuses, National league",
+        internationalComp: "Yes (International Handball Genocide Tournament, Badminton & Parabadminton)",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "No", challenges: "Active coaching staff but limited by unavailability of some academic/admin staff", wayForward: "Sensitize staff for coaching, provide motivation, and offer contracts to external coaches" },
+        medical: { hasMedical: "Yes", challenges: "Quality of supplied medicines", wayForward: "Train medical staff on the importance of sports medicine in UR events" },
+        insurance: { hasInsurance: "Yes", suggestion: "Maintain current insurance coverage" },
+        studentRole: "Guild Ministry of Sports, Culture and Associations coordinates closely with officers",
+        facilities: {
+          availableDesc: "27 playgrounds across campus disciplines",
+          standardDesc: "16 playgrounds meet required standards",
+          renovationDesc: "9 playgrounds need renovation",
+          buildingDesc: "4 new facilities (2 Football pitches, 1 Volleyball court, 1 Basketball court)"
+        },
+        equipment: {
+          sportsEquip: "Enough",
+          culturalEquip: "Enough",
+          lackReasons: "N/A",
+          wayForward: "Sustain seasonal renewal cycle",
+          hasStore: "Yes",
+          storeLocation: "Managed by Campus Logistics Officer & Sports and Culture Officer",
+          storeSuggestion: "Current dual management works effectively",
+          renewalPeriod: "Per sports Season"
+        },
+        budget: {
+          hasBudgetLine: "Yes",
+          hasClearPlan: "Yes",
+          officersInvolved: "Yes",
+          isEnough: "Yes",
+          isRespected: "Yes",
+          implications: "Budget plan fully respected",
+          facilitationSuggestion: "Current process is convenient"
+        },
+        pwd: {
+          hasActivities: "Yes",
+          sportsList: "Goalball, Sitball, Sitting Volleyball, Amputee Football, Wheelchair Basketball, Para-Athletics, Para-Badminton",
+          hasAdaptedFacilities: "Yes (8 adapted facilities)",
+          adaptedEnough: "Yes",
+          constructionPlan: "Yes",
+          npcParticipation: "Yes (All 7 parasports disciplines)",
+          disabilityTypes: "Physical (43 athletes), Visual (24 athletes)",
+          pwdPercentage: "0.5% (67 active para-athletes)"
+        },
+        gender: { femaleClubsCount: "8", femaleClubsList: "7 active disciplines", genderRespected: "Yes", femalePct: 25, malePct: 75, suggestions: "Continue mobilization and sensitization campaigns" }
+      }
+    ];
+
+    // Load from localStorage or fallback to INITIAL_UR_DATA
+    let urData = JSON.parse(localStorage.getItem('ur_sports_portal_data_v1')) || JSON.parse(JSON.stringify(INITIAL_UR_DATA));
+    let selectedCampus = "ALL";
+    let charts = {};
+
+    function saveToStorage() {
+      localStorage.setItem('ur_sports_portal_data_v1', JSON.stringify(urData));
+    }
+
+    function resetDefaultData() {
+      if (confirm("Reset portal data back to the original 8-campus baseline survey?")) {
+        urData = JSON.parse(JSON.stringify(INITIAL_UR_DATA));
+        saveToStorage();
+        selectedCampus = "ALL";
+        document.getElementById("globalCampusFilter").value = "ALL";
+        refreshAll();
+      }
+    }
+
+    function populateCampusDropdown() {
+      const select = document.getElementById("globalCampusFilter");
+      const currentVal = select.value;
+      select.innerHTML = `<option value="ALL" class="text-slate-900">All UR Campuses (${urData.length} Reporting)</option>`;
+      urData.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.campus;
+        opt.textContent = item.campus;
+        opt.className = "text-slate-900";
+        select.appendChild(opt);
+      });
+      if ([...select.options].some(o => o.value === currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    function handleCampusFilterChange() {
+      selectedCampus = document.getElementById("globalCampusFilter").value;
+      refreshAll();
+    }
+
+    function getFilteredData() {
+      if (selectedCampus === "ALL") return urData;
+      return urData.filter(d => d.campus === selectedCampus);
+    }
+
+    function switchTab(tabId) {
+      ['overview', 'facilities', 'inclusion', 'governance', 'report'].forEach(id => {
+        document.getElementById(`view-${id}`).classList.add('hidden');
+        document.getElementById(`tab-${id}`).classList.remove('active');
+      });
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      refreshAll();
+    }
+
+    function badge(val, positive = "Yes") {
+      if (val === positive) return `<span class="badge-yes px-2 py-0.5 rounded-full text-xs font-semibold">${val}</span>`;
+      if (val === "Not enough" || val === "Partial") return `<span class="badge-warn px-2 py-0.5 rounded-full text-xs font-semibold">${val}</span>`;
+      return `<span class="badge-no px-2 py-0.5 rounded-full text-xs font-semibold">${val}</span>`;
+    }
+
+    function renderKPIs() {
+      const data = getFilteredData();
+      const n = data.length || 1;
+      const avgDisciplines = (data.reduce((s, d) => s + (d.activeCount || 0), 0) / n).toFixed(1);
+      const coachesCount = data.filter(d => d.coaches.hasCoaches === "Yes").length;
+      const medicalCount = data.filter(d => d.medical.hasMedical === "Yes").length;
+      const insuranceCount = data.filter(d => d.insurance.hasInsurance === "Yes").length;
+      const pwdCount = data.filter(d => d.pwd.hasActivities === "Yes").length;
+      const budgetCount = data.filter(d => d.budget.isEnough === "Yes").length;
+
+      const kpis = [
+        { label: "Reporting Campuses", value: `${data.length} / ${urData.length}`, sub: "Active UR Units", color: "text-[#1b5e7a]" },
+        { label: "Avg. Active Sports", value: avgDisciplines, sub: "Out of 18 Core Disciplines", color: "text-sky-700" },
+        { label: "Coaching Coverage", value: `${Math.round((coachesCount/n)*100)}%`, sub: `${coachesCount}/${data.length} Campuses (Volunteer)`, color: "text-indigo-700" },
+        { label: "Competition Insurance", value: `${Math.round((insuranceCount/n)*100)}%`, sub: `${insuranceCount}/${data.length} Campuses Insured`, color: insuranceCount === data.length ? "text-emerald-700" : "text-amber-700" },
+        { label: "PWD Parasports Active", value: `${Math.round((pwdCount/n)*100)}%`, sub: `${pwdCount}/${data.length} Campuses Inclusive`, color: "text-teal-700" },
+        { label: "Budget Adequacy", value: `${Math.round((budgetCount/n)*100)}%`, sub: `${budgetCount}/${data.length} Report Enough Funds`, color: "text-rose-700" }
+      ];
+
+      document.getElementById("kpiStrip").innerHTML = kpis.map(k => `
+        <div class="card p-4">
+          <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">${k.label}</div>
+          <div class="text-2xl font-extrabold mt-1 ${k.color}">${k.value}</div>
+          <div class="text-xs text-slate-400 mt-1">${k.sub}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderOverviewCharts() {
+      const data = getFilteredData();
+
+      // Chart 1: Active Disciplines per Campus
+      const ctx1 = document.getElementById('disciplinesChart').getContext('2d');
+      if (charts.disc) charts.disc.destroy();
+      charts.disc = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.campus.replace("UR ", "").replace(" Campus", "").split(" (")[0]),
+          datasets: [{
+            label: 'Active Sports Disciplines',
+            data: data.map(d => d.activeCount),
+            backgroundColor: '#1b5e7a',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 18, ticks: { stepSize: 3 } } }
+        }
+      });
+
+      // Chart 2: Service Readiness Radar/Horizontal Bar
+      const n = data.length || 1;
+      const metrics = [
+        { label: "Medical Staff Available", pct: Math.round((data.filter(d => d.medical.hasMedical === "Yes").length / n) * 100) },
+        { label: "Coaches Available", pct: Math.round((data.filter(d => d.coaches.hasCoaches === "Yes").length / n) * 100) },
+        { label: "Competition Insurance", pct: Math.round((data.filter(d => d.insurance.hasInsurance === "Yes").length / n) * 100) },
+        { label: "PWD Sports Programs", pct: Math.round((data.filter(d => d.pwd.hasActivities === "Yes").length / n) * 100) },
+        { label: "Dedicated Equipment Store", pct: Math.round((data.filter(d => d.equipment.hasStore === "Yes").length / n) * 100) },
+        { label: "Enough Sports Equipment", pct: Math.round((data.filter(d => d.equipment.sportsEquip === "Enough").length / n) * 100) },
+        { label: "Allocated Budget Enough", pct: Math.round((data.filter(d => d.budget.isEnough === "Yes").length / n) * 100) }
+      ];
+
+      const ctx2 = document.getElementById('readinessChart').getContext('2d');
+      if (charts.ready) charts.ready.destroy();
+      charts.ready = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: metrics.map(m => m.label),
+          datasets: [{
+            label: '% of Campuses Compliant',
+            data: metrics.map(m => m.pct),
+            backgroundColor: metrics.map(m => m.pct >= 75 ? '#059669' : m.pct >= 50 ? '#d99b26' : '#dc2626'),
+            borderRadius: 5
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+      });
+    }
+
+    function renderOverviewTable() {
+      const q = (document.getElementById("tableSearch")?.value || "").toLowerCase();
+      const data = getFilteredData().filter(d =>
+        d.campus.toLowerCase().includes(q) ||
+        d.facilities.availableDesc.toLowerCase().includes(q) ||
+        d.pwd.sportsList.toLowerCase().includes(q)
+      );
+
+      document.getElementById("overviewTableBody").innerHTML = data.map(d => `
+        <tr class="hover:bg-sky-50/60 cursor-pointer transition" onclick="openCampusModal(${d.id})">
+          <td class="px-4 py-3 font-semibold text-slate-800">
+            <div>${d.campus}</div>
+            <div class="text-xs font-normal text-slate-400">${d.sportsCategories}</div>
+          </td>
+          <td class="px-4 py-3 text-center font-bold text-[#1b5e7a]">${d.activeCount}</td>
+          <td class="px-4 py-3 text-center">${badge(d.coaches.hasCoaches)}</td>
+          <td class="px-4 py-3 text-center">${badge(d.medical.hasMedical)}</td>
+          <td class="px-4 py-3 text-center">${badge(d.insurance.hasInsurance)}</td>
+          <td class="px-4 py-3 text-center">${badge(d.equipment.sportsEquip, "Enough")}</td>
+          <td class="px-4 py-3 text-center">${badge(d.budget.isEnough)}</td>
+          <td class="px-4 py-3 text-center">${badge(d.pwd.hasActivities)}</td>
+          <td class="px-4 py-3 text-right">
+            <button class="text-xs font-semibold text-[#1b5e7a] hover:underline">Inspect &rarr;</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderFacilitiesView() {
+      const data = getFilteredData();
+      document.getElementById("facilitiesTableBody").innerHTML = data.map(d => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-3 py-3 font-semibold text-slate-800">${d.campus}</td>
+          <td class="px-3 py-3 text-slate-600">${d.facilities.availableDesc}</td>
+          <td class="px-3 py-3 text-emerald-700 font-medium">${d.facilities.standardDesc}</td>
+          <td class="px-3 py-3 text-amber-700">${d.facilities.renovationDesc}</td>
+          <td class="px-3 py-3 text-rose-700">${d.facilities.buildingDesc}</td>
+        </tr>
+      `).join('');
+
+      // Equipment Chart
+      const ctx = document.getElementById('equipmentChart').getContext('2d');
+      if (charts.equip) charts.equip.destroy();
+      charts.equip = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Enough Equipment (3)', 'Not Enough Equipment (5)'],
+          datasets: [{
+            data: [
+              data.filter(d => d.equipment.sportsEquip === "Enough").length,
+              data.filter(d => d.equipment.sportsEquip !== "Enough").length
+            ],
+            backgroundColor: ['#059669', '#d97706']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      document.getElementById("equipmentCardsGrid").innerHTML = data.map(d => `
+        <div class="card p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800">${d.campus}</h3>
+            ${badge(d.equipment.hasStore === "Yes" ? "Dedicated Store" : "No Store", "Dedicated Store")}
+          </div>
+          <p class="text-xs text-slate-600"><strong>Storage &amp; Custody:</strong> ${d.equipment.storeLocation}</p>
+          <p class="text-xs text-slate-600"><strong>Renewal Cycle:</strong> ${d.equipment.renewalPeriod}</p>
+          <p class="text-xs text-slate-600"><strong>Officer Action Plan:</strong> ${d.equipment.wayForward} (${d.equipment.storeSuggestion})</p>
+        </div>
+      `).join('');
+    }
+
+    function renderInclusionView() {
+      const data = getFilteredData();
+
+      // Gender Chart
+      const ctx = document.getElementById('genderChart').getContext('2d');
+      if (charts.gender) charts.gender.destroy();
+      charts.gender = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.campus.replace("UR ", "").replace(" Campus", "").split(" (")[0]),
+          datasets: [
+            { label: 'Female Athletes (%)', data: data.map(d => d.gender.femalePct), backgroundColor: '#ec4899', borderRadius: 4 },
+            { label: 'Male Athletes (%)', data: data.map(d => d.gender.malePct), backgroundColor: '#1b5e7a', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, max: 100 } }
+        }
+      });
+
+      // PWD Summary List
+      document.getElementById("pwdSummaryList").innerHTML = data.map(d => `
+        <div class="p-3 rounded-lg border ${d.pwd.hasActivities === 'Yes' ? 'bg-teal-50/50 border-teal-200' : 'bg-slate-50 border-slate-200'}">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-xs text-slate-800">${d.campus}</span>
+            ${badge(d.pwd.hasActivities === 'Yes' ? 'Active Parasports' : 'No PWD Sports', 'Active Parasports')}
+          </div>
+          <p class="text-xs text-slate-600 mt-1"><strong>Disciplines:</strong> ${d.pwd.sportsList}</p>
+          <p class="text-xs text-slate-500 mt-0.5"><strong>NPC Rwanda:</strong> ${d.pwd.npcParticipation} &bull; <strong>PWD Share:</strong> ${d.pwd.pwdPercentage}</p>
+        </div>
+      `).join('');
+
+      // Heatmap Table
+      let headerHTML = `<thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 text-left border">Discipline</th>`;
+      DEMOGRAPHIC_GROUPS.forEach(g => {
+        headerHTML += `<th class="p-2 text-center border">${g.replace("For ", "")}</th>`;
+      });
+      headerHTML += `</tr></thead><tbody>`;
+
+      let bodyHTML = ALL_DISCIPLINES.map(disc => {
+        let row = `<tr><td class="p-2 font-semibold border bg-slate-50">${disc}</td>`;
+        DEMOGRAPHIC_GROUPS.forEach(grp => {
+          const count = data.filter(c => c.disciplines[disc] && c.disciplines[disc][grp] === "Yes").length;
+          let bg = "bg-white text-slate-400";
+          if (count >= 6) bg = "bg-teal-800 text-white font-bold";
+          else if (count >= 3) bg = "bg-sky-500 text-white font-semibold";
+          else if (count >= 1) bg = "bg-sky-100 text-sky-900 font-medium";
+          row += `<td class="p-2 text-center border ${bg}">${count}</td>`;
+        });
+        row += `</tr>`;
+        return row;
+      }).join('');
+
+      document.getElementById("heatmapTable").innerHTML = headerHTML + bodyHTML + `</tbody>`;
+    }
+
+    function renderGovernanceView() {
+      const data = getFilteredData();
+      document.getElementById("governanceGrid").innerHTML = data.map(d => `
+        <div class="card p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="font-bold text-base text-[#1b5e7a]">${d.campus}</h3>
+            <span class="text-xs text-slate-400">Updated: ${d.timestamp}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div class="p-2 rounded bg-slate-50">
+              <div class="text-slate-400">Coaches</div>
+              <div class="font-bold text-slate-800 mt-0.5">${d.coaches.hasCoaches} (${d.coaches.status})</div>
+            </div>
+            <div class="p-2 rounded bg-slate-50">
+              <div class="text-slate-400">Medical Staff</div>
+              <div class="font-bold text-slate-800 mt-0.5">${d.medical.hasMedical}</div>
+            </div>
+            <div class="p-2 rounded bg-slate-50">
+              <div class="text-slate-400">Budget Respected</div>
+              <div class="font-bold text-slate-800 mt-0.5">${d.budget.isRespected}</div>
+            </div>
+          </div>
+          <div class="space-y-1.5 text-xs text-slate-600">
+            <p><strong>Coaching Way Forward:</strong> ${d.coaches.wayForward}</p>
+            <p><strong>Medical &amp; Insurance:</strong> ${d.medical.wayForward} &bull; Insurance: ${d.insurance.suggestion}</p>
+            <p><strong>Budget &amp; Facilitation Impact:</strong> ${d.budget.implications}. <em>(${d.budget.facilitationSuggestion})</em></p>
+            <p><strong>Student Guild Role:</strong> ${d.studentRole}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openCampusModal(id) {
+      const c = urData.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById("modalTitle").textContent = c.campus;
+      document.getElementById("modalSubtitle").textContent = `Survey Timestamp: ${c.timestamp} | Categories: ${c.sportsCategories}`;
+
+      const activeSports = ALL_DISCIPLINES.filter(d =>
+        DEMOGRAPHIC_GROUPS.some(g => c.disciplines[d] && c.disciplines[d][g] === "Yes")
+      );
+
+      document.getElementById("modalBody").innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-[#1b5e7a] uppercase text-xs">Infrastructure &amp; Facilities</h4>
+            <p><strong>Available:</strong> ${c.facilities.availableDesc}</p>
+            <p><strong>Meets Standards:</strong> ${c.facilities.standardDesc}</p>
+            <p><strong>Needs Renovation:</strong> ${c.facilities.renovationDesc}</p>
+            <p><strong>Needs Construction:</strong> ${c.facilities.buildingDesc}</p>
+          </div>
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-[#1b5e7a] uppercase text-xs">Inclusion, Gender &amp; Parasports</h4>
+            <p><strong>PWD Sports:</strong> ${c.pwd.sportsList} (${c.pwd.pwdPercentage} participation)</p>
+            <p><strong>Adapted Facilities:</strong> ${c.pwd.hasAdaptedFacilities}</p>
+            <p><strong>Female Clubs (${c.gender.femaleClubsCount}):</strong> ${c.gender.femaleClubsList}</p>
+            <p><strong>Gender Split:</strong> ${c.gender.femalePct}% Female / ${c.gender.malePct}% Male</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-800 mb-2">Active Disciplines &amp; Demographic Breakdown (${activeSports.length} Sports)</h4>
+          <div class="flex flex-wrap gap-2">
+            ${activeSports.map(s => {
+              const groups = DEMOGRAPHIC_GROUPS.filter(g => c.disciplines[s][g] === "Yes").map(g => g.replace("For ", ""));
+              return `<div class="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200 text-xs">
+                <span class="font-bold text-sky-900">${s}:</span> <span class="text-slate-600">${groups.join(", ")}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="p-4 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+          <h4 class="font-bold text-amber-900 text-xs uppercase">Officer Strategic Recommendations</h4>
+          <p><strong>Coaching:</strong> ${c.coaches.wayForward}</p>
+          <p><strong>Equipment &amp; Budget:</strong> ${c.equipment.wayForward} &bull; ${c.budget.facilitationSuggestion}</p>
+          <p><strong>Equal Promotion:</strong> ${c.equalPromotionSuggestion}</p>
+        </div>
+      `;
+      const modal = document.getElementById("campusModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeCampusModal() {
+      const modal = document.getElementById("campusModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function handleReportSubmit(e) {
+      e.preventDefault();
+      const campusName = document.getElementById("formCampus").value;
+      const now = new Date().toLocaleString();
+      const existingIdx = urData.findIndex(d => d.campus === campusName);
+
+      const updatedRecord = existingIdx >= 0 ? { ...urData[existingIdx] } : {
+        id: urData.length + 1,
+        campus: campusName,
+        activeCount: 6,
+        disciplines: buildDiscMatrix({ "Football": [0, 1], "Basketball": [0, 1], "Volleyball": [0, 1], "Athletics": [0, 1] }),
+        otherSports: "None",
+        equalPromotion: "Yes",
+        equalPromotionSuggestion: "",
+        intraCampusGames: "Inter promotions, Inter schools",
+        extraCampusGames: "UR inter campuses",
+        internationalComp: "No",
+        coaches: { hasCoaches: "Yes", status: "Volunteer", specialized: "Yes", challenges: "", wayForward: "" },
+        medical: { hasMedical: "Yes", challenges: "", wayForward: "" },
+        insurance: { hasInsurance: "Yes", suggestion: "" },
+        studentRole: "Student Guild Sports Ministry",
+        facilities: { availableDesc: "", standardDesc: "Under review", renovationDesc: "", buildingDesc: "" },
+        equipment: { sportsEquip: "Not enough", culturalEquip: "Not enough", lackReasons: "Budget", wayForward: "", hasStore: "Yes", storeLocation: "Campus Store", storeSuggestion: "", renewalPeriod: "Per Academic year" },
+        budget: { hasBudgetLine: "Yes", hasClearPlan: "Yes", officersInvolved: "Yes", isEnough: "No", isRespected: "Yes", implications: "", facilitationSuggestion: "" },
+        pwd: { hasActivities: "No", sportsList: "None", hasAdaptedFacilities: "No", adaptedEnough: "No", constructionPlan: "Yes", npcParticipation: "No", disabilityTypes: "N/A", pwdPercentage: "0%" },
+        gender: { femaleClubsCount: "2", femaleClubsList: "Football, Volleyball", genderRespected: "Yes", femalePct: 35, malePct: 65, suggestions: "" }
+      };
+
+      updatedRecord.timestamp = now;
+      updatedRecord.sportsCategories = document.getElementById("formCategories").value;
+      updatedRecord.coaches.hasCoaches = document.getElementById("formCoaches").value;
+      updatedRecord.medical.hasMedical = document.getElementById("formMedical").value;
+      updatedRecord.insurance.hasInsurance = document.getElementById("formInsurance").value;
+      updatedRecord.equipment.sportsEquip = document.getElementById("formEquipment").value;
+      updatedRecord.facilities.availableDesc = document.getElementById("formPlaygrounds").value;
+      updatedRecord.facilities.renovationDesc = document.getElementById("formRenovation").value;
+      updatedRecord.budget.isEnough = document.getElementById("formBudgetEnough").value;
+      updatedRecord.pwd.hasActivities = document.getElementById("formPwd").value;
+      updatedRecord.gender.femalePct = Number(document.getElementById("formFemalePct").value) || 30;
+      updatedRecord.gender.malePct = Number(document.getElementById("formMalePct").value) || 70;
+      const recText = document.getElementById("formRecommendations").value.trim();
+      if (recText) {
+        updatedRecord.coaches.wayForward = recText;
+        updatedRecord.equalPromotionSuggestion = recText;
+      }
+
+      if (existingIdx >= 0) urData[existingIdx] = updatedRecord;
+      else urData.push(updatedRecord);
+
+      saveToStorage();
+      populateCampusDropdown();
+      alert(`Report saved for ${campusName}! Dashboard visualizations have been updated.`);
+      switchTab('overview');
+    }
+
+    function exportToCSV() {
+      const headers = ["Campus", "Last Updated", "Active Disciplines", "Coaches", "Medical Staff", "Insurance", "Equipment", "Budget Enough", "PWD Sports", "Female %", "Male %", "Available Facilities", "Renovation Needs"];
+      const rows = getFilteredData().map(d => [
+        `"${d.campus}"`,
+        `"${d.timestamp}"`,
+        d.activeCount,
+        d.coaches.hasCoaches,
+        d.medical.hasMedical,
+        d.insurance.hasInsurance,
+        d.equipment.sportsEquip,
+        d.budget.isEnough,
+        d.pwd.hasActivities,
+        d.gender.femalePct,
+        d.gender.malePct,
+        `"${d.facilities.availableDesc.replace(/"/g, '""')}"`,
+        `"${d.facilities.renovationDesc.replace(/"/g, '""')}"`
+      ]);
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", `UR_Sports_Facilities_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function refreshAll() {
+      renderKPIs();
+      renderOverviewCharts();
+      renderOverviewTable();
+      renderFacilitiesView();
+      renderInclusionView();
+      renderGovernanceView();
+    }
+
+    // Initialize Portal
+    populateCampusDropdown();
+    refreshAll();
+  </script>
+</body>
+</html>
